@@ -1,0 +1,5 @@
+; The optimal cost of this alignment is 22
+>seq1
+ACGT-GTCAACGT
+>seq2
+ACGTCGT-AGCTA
