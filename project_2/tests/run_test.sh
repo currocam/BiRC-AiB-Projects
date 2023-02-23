@@ -4,6 +4,7 @@ python main.py global-linear tests/case1/seq1.fasta \
 bash tests/scripts/cmp.sh tmp.fasta tests/expected/case1.fasta
 rm tmp.fasta
 
+
 python main.py global-linear tests/case1/seq1.fasta \
     tests/case1/seq2.fasta tests/case1/file.conf -o tmp.fasta
 head -n 1 tests/expected/case1.fasta > tmp2.txt
