@@ -18,10 +18,9 @@ bash tests/scripts/cmp.sh tmp.fasta tmp2.txt
 rm tmp.fasta tmp2.txt
 
 python main.py global-affine tests/case1/seq1.fasta \
-    tests/case1/seq2.fasta tests/case1/affine.conf -o tmp.fasta
-head -n 1 tests/expected/case1_affine.fasta > tmp2.txt
-bash tests/scripts/cmp.sh tmp.fasta tmp2.txt
-rm tmp.fasta tmp2.txt
+    tests/case1/seq2.fasta tests/case1/affine.conf --print-alignment -o tmp.fasta
+bash tests/scripts/cmp.sh tmp.fasta tests/expected/case1_affine.fasta
+rm tmp.fasta
 
 # Second case
 python main.py global-linear tests/case2/seq1.fasta \
@@ -42,10 +41,9 @@ bash tests/scripts/cmp.sh tmp.fasta tmp2.txt
 rm tmp.fasta tmp2.txt
 
 python main.py global-affine tests/case2/seq1.fasta \
-    tests/case2/seq2.fasta tests/case2/affine.conf -o tmp.fasta
-head -n 1 tests/expected/case2_affine.fasta > tmp2.txt
-bash tests/scripts/cmp.sh tmp.fasta tmp2.txt
-rm tmp.fasta tmp2.txt
+    tests/case2/seq2.fasta tests/case2/affine.conf --print-alignment -o tmp.fasta
+bash tests/scripts/cmp.sh tmp.fasta tests/expected/case2_affine.fasta
+rm tmp.fasta 
 
 # Third case
 python main.py global-linear tests/case3/seq1.fasta \

@@ -116,10 +116,36 @@ def global_affine_matrix(
             S.set_value(np.nanmin([v1,v2,v3,v3, v4]), i, j)
     return S, I, D
 
+def global_affine_backtrack(
+    S: Matrix, I: Matrix, D: Matrix,
+    A: list[int], B: list[int], conf: ConfigurationAlignment,
+    )-> Tuple[list[int], list[int]]:
+    """Compute alignment in linear time using the whole cost matrix"""
+    align1, align2 = "", ""
+    A, B = int2dna(A), int2dna(B)
+    i, j = len(A), len(B)
+    while i > 0 or j > 0:
+        if S.get_value(i, j) == D.get_value(i, j) + conf.gap.alpha + conf.gap.beta:
+            align1 = A[i-1] + align1
+            align2 = '-' + align2
+            i -= 1
+        elif S.get_value(i, j) == I.get_value(i, j):
+            align1 = A[i-1] + align1
+            align2 = '-' + align2
+            i -= 1
+        elif S.get_value(i, j) ==  D.get_value(i, j):
+            align1 = A[i-1] + align1
+            align2 = B[j-1] + align2
+            i -= 1
+            j -= 1
+        else:
+            align1 = '-' + align1
+            align2 = B[j-1] + align2
+            j -= 1
+    return align1, align2
 
 
-
-def back_tracking_matrix(
+def global_linear_backtrack(
     T: np.ndarray,
     A: list[int], B: list[int], conf: ConfigurationAlignment,
     aligned_1 = None, aligned_2 = None
@@ -190,7 +216,7 @@ def global_linear(
     mat = global_linear_matrix(*args)
     print(f"; The optimal cost of this alignment is {mat.get_value(len(x), len(y))}", file = f)
     if print_alignment:
-        aligned_1, aligned_2 = back_tracking_matrix(mat.mat, *args)
+        aligned_1, aligned_2 = global_linear_backtrack(mat.mat, *args)
         seq1.seq, seq2.seq  = Seq(int2dna(aligned_1)), Seq(int2dna(aligned_2))
         SeqIO.write(iter([seq1, seq2]), f, "fasta")
 
@@ -208,12 +234,12 @@ def global_affine(
     seq1, seq2, conf, f = read_CLI_input(sequence_1, sequence_2, configuration, output)
     x, y = dna2int(seq1.seq, conf.alphabet), dna2int(seq2.seq, conf.alphabet)
     args = [x, y, conf]
-    mat, _, _ = global_affine_matrix(*args)
-    print(f"; The optimal cost of this alignment is {int(mat.get_value(len(x), len(y)))}", file = f)
-    # if print_alignment:
-    #     aligned_1, aligned_2 = back_tracking_matrix(len(x), len(y), mat.mat, *args)
-    #     seq1.seq, seq2.seq  = Seq(int2dna(aligned_1)), Seq(int2dna(aligned_2))
-    #     SeqIO.write(iter([seq1, seq2]), f, "fasta")
+    S, I, D = global_affine_matrix(*args)
+    print(f"; The optimal cost of this alignment is {int(S.get_value(len(x), len(y)))}", file = f)
+    if print_alignment:
+        aligned_1, aligned_2 = global_affine_backtrack(S, I, D, *args)
+        seq1.seq, seq2.seq  = Seq(aligned_1), Seq(aligned_2)
+        SeqIO.write(iter([seq1, seq2]), f, "fasta")
 
 if __name__ == "__main__":
     app()
