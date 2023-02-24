@@ -1,5 +1,6 @@
 from collections import namedtuple
 from typing import Sized, Tuple, Optional
+import warnings
 import typer
 from Bio import SeqIO
 from pathlib import Path
@@ -7,6 +8,9 @@ import numpy as np
 import sys
 from dataclasses import dataclass
 from Bio.Seq import Seq
+
+warnings.filterwarnings('ignore')
+
 
 # Helper dataclass and fn
 def construct_alphabet(x: str) -> dict[str: int]:
@@ -94,15 +98,15 @@ def global_affine_matrix(
     dim = (len(x)+1, len(y)+1)
     alpha, beta = conf.gap.alpha, conf.gap.beta
     S, I, D = Matrix(np.full(dim, np.nan)), Matrix(np.full(dim, np.nan)), Matrix(np.full(dim, np.nan))
-    for i in range(len(x)):
-        for j in range(len(y)):
+    for i in range(len(x)+1):
+        for j in range(len(y)+1):
             v1 = v2 = np.nan
-            if i>0 and j>=0:  v1 = S.get_value(i-1,j) -(alpha+beta)
-            if i>1 and j>=0:  v2 = D.get_value(i-1,j)-alpha
+            if i>0 and j>=0:  v1 = S.get_value(i-1,j) +(alpha+beta)
+            if i>1 and j>=0:  v2 = D.get_value(i-1,j)+alpha
             D.set_value(np.nanmin([v1,v2]), i, j)
             v1 = v2 = np.nan
-            if i>=0 and j>0:  v1 = S.get_value(i,j-1)-(alpha+beta)
-            if i>=0 and j>1:  v2 = I.get_value(i,j-1)-alpha
+            if i>=0 and j>0:  v1 = S.get_value(i,j-1)+(alpha+beta)
+            if i>=0 and j>1:  v2 = I.get_value(i,j-1)+alpha
             I.set_value(np.nanmin([v1,v2]), i, j)
             v1 = v2 = v3 = v4 = np.nan
             if i==0 and j==0: v1 = 0
@@ -110,9 +114,6 @@ def global_affine_matrix(
             if i>0 and j>=0: v3 = D.get_value(i,j)
             if i>=0 and j>0: v4 = I.get_value(i,j)
             S.set_value(np.nanmin([v1,v2,v3,v3, v4]), i, j)
-    print(conf.score_matrix)
-    print(D)
-    print(I)
     return S, I, D
 
 
@@ -208,7 +209,7 @@ def global_affine(
     x, y = dna2int(seq1.seq, conf.alphabet), dna2int(seq2.seq, conf.alphabet)
     args = [x, y, conf]
     mat, _, _ = global_affine_matrix(*args)
-    print(f"; The optimal cost of this alignment is {mat.get_value(len(x), len(y))}", file = f)
+    print(f"; The optimal cost of this alignment is {int(mat.get_value(len(x), len(y)))}", file = f)
     # if print_alignment:
     #     aligned_1, aligned_2 = back_tracking_matrix(len(x), len(y), mat.mat, *args)
     #     seq1.seq, seq2.seq  = Seq(int2dna(aligned_1)), Seq(int2dna(aligned_2))
