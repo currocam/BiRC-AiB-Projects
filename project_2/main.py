@@ -101,19 +101,19 @@ def global_affine_matrix(
     for i in range(len(x)+1):
         for j in range(len(y)+1):
             v1 = v2 = np.nan
-            if i>0 and j>=0:  v1 = S.get_value(i-1,j) +(alpha+beta)
-            if i>1 and j>=0:  v2 = D.get_value(i-1,j)+alpha
-            D.set_value(np.nanmin([v1,v2]), i, j)
+            if i > 0 and j >= 0:  v1 = S.get_value(i-1, j) + (alpha + beta)
+            if i > 1 and j >= 0:  v2 = D.get_value(i-1, j) + alpha
+            D.set_value(np.nanmin([v1, v2]), i, j)
             v1 = v2 = np.nan
-            if i>=0 and j>0:  v1 = S.get_value(i,j-1)+(alpha+beta)
-            if i>=0 and j>1:  v2 = I.get_value(i,j-1)+alpha
-            I.set_value(np.nanmin([v1,v2]), i, j)
+            if i >= 0 and j > 0:  v1 = S.get_value(i, j-1) + (alpha+beta)
+            if i >= 0 and j > 1:  v2 = I.get_value(i, j-1) + alpha
+            I.set_value(np.nanmin([v1, v2]), i, j)
             v1 = v2 = v3 = v4 = np.nan
-            if i==0 and j==0: v1 = 0
-            if i>0 and j>0: v2 = S.get_value(i-1,j-1) + conf.score_matrix[x[i-1], y[j-1]]
-            if i>0 and j>=0: v3 = D.get_value(i,j)
-            if i>=0 and j>0: v4 = I.get_value(i,j)
-            S.set_value(np.nanmin([v1,v2,v3,v3, v4]), i, j)
+            if i == 0 and j == 0: v1 = 0
+            if i > 0 and j > 0: v2 = S.get_value(i-1, j-1) + conf.score_matrix[x[i-1], y[j-1]]
+            if i > 0 and j >= 0: v3 = D.get_value(i, j)
+            if i >= 0 and j > 0: v4 = I.get_value(i, j)
+            S.set_value(np.nanmin([v1, v2, v3, v4]), i, j)
     return S, I, D
 
 def global_affine_backtrack(
