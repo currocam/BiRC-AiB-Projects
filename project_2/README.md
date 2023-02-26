@@ -12,54 +12,61 @@ conda activate project2
 To see available programs: 
 ``` bash
 python main.py --help
-
-Commands:
-  global-linear           This program finds the cost of a global...
-  global-linear-linspace  This program finds the cost of a global...
+                                                                                                                      
+ Usage: main.py [OPTIONS] COMMAND [ARGS]...                                                                           
+╭─ Commands ─────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ global-affine           This program finds the cost of a global alignment and, optionally, the  alignment itself   │
+│                         in quadratic time and space.                                                               │
+│ global-linear           This program finds the cost of a global alignment and, optionally, the  alignment itself   │
+│                         in quadratic time and space.                                                               │
+│ global-linear-linspace  This program finds the cost of a global alignment quadratic time and  linear space.        │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 Let's inspect global-linear options:
 
 ``` bash
-python main.py global-linear --help
-python main.py global-linear --help
-Usage: main.py global-linear [OPTIONS] SEQUENCE_1 SEQUENCE_2 CONFIGURATION
+python main.py global-affine --help
+                                                                                                                      
+ Usage: main.py global-affine [OPTIONS] SEQUENCE_1 SEQUENCE_2 CONFIGURATION                                           
+                                                                                                                      
+ This program finds the cost of a global alignment and, optionally, the  alignment itself in quadratic time and       
+ space.                                                                                                               
+                                                                                                                      
+╭─ Arguments ────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *    sequence_1         PATH  [default: None] [required]                                                           │
+│ *    sequence_2         PATH  [default: None] [required]                                                           │
+│ *    configuration      PATH  [default: None] [required]                                                           │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --print-alignment                                                                                                  │
+│ --outfile          -o      PATH  [default: None]                                                                   │
+│ --help                           Show this message and exit.                                                       │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-  This program finds the cost of a global alignment and, optionally, the
-  alignment itself in quadratic time and space.
-
-Arguments:
-  SEQUENCE_1     [required]
-  SEQUENCE_2     [required]
-  CONFIGURATION  [required]
-
-Options:
-  --print-alignment
-  -o, --outfile PATH
-  --help              Show this message and exit.
 ```
 
 If we try to run without enough arguments, it will fail:
 
 ``` bash
-python main.py --help
-
-Commands:
-  global-linear           This program finds the cost of a global...
-  global-linear-linspace  This program finds the cost of a global...
+ python main.py global-affine seq1.fasta seq2.fasta
+Usage: main.py global-affine [OPTIONS] SEQUENCE_1 SEQUENCE_2 CONFIGURATION
+Try 'main.py global-affine --help' for help.
+╭─ Error ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Missing argument 'CONFIGURATION'.                                                                                  │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
-We can find the optimal cost and the alignment. We can either print to standard output or to file. 
+We can find the optimal cost and an alignment for linear and affine gap cost. We can either print to standard output or to file. For printing the optimal cost, we are using the fact that ";" is the comment keyword for fasta files. 
 
 ``` bash
-python main.py global-linear integration/seq1.fasta integration/seq2.fasta integration/setting.conf --print-alignment
+python main.py global-linear seq1.fasta seq2.fasta linear.conf --print-alignment
 ```
-
 
 We can also find the optimal cost using only linear space:
 
 ``` bash
-python main.py global-linear-linspace integration/seq1.fasta integration/seq2.fasta integration/setting.conf
+python main.py global-linear-linspace seq1.fasta seq2.fasta linear.conf -o output.fasta
 ```
 
 ## How to run tests
@@ -68,20 +75,8 @@ python main.py global-linear-linspace integration/seq1.fasta integration/seq2.fa
 bash tests/run_test.sh
 ```
 
-# How to measure time
+# How to benchmark
 
 ``` bash
-time python main.py global-linear-linspace tests/case4/seq1.fasta tests/case4/seq2.fasta tests/case4/file.conf
-
-real    0m0.487s
-user    0m0.410s
-sys     0m0.021s
-```
-
-``` bash
-time python main.py global-linear tests/case4/seq1.fasta tests/case4/seq2.fasta tests/case4/file.conf
-
-real    0m0.558s
-user    0m0.475s
-sys     0m0.033s
+bash benchmark/benchmark.sh
 ```

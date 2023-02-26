@@ -1,24 +1,27 @@
 #!/bin/bash
 mkdir tmp
-
-echo "algo,length,real,user,sys" > benchmark/benchmark.tsv
+outfile="benchmark/benchmark.csv"
+echo "algo,length,real,user,sys" > $outfile
 # Basic range in for loop
-for value in {0..500..20}
+for value in {0..700..20}
 do
 echo $value
 # Create random files
 python benchmark/simulate_fasta.py $value $value
-    for _ in {1..3}
+    for _ in {0..3}
     do
-    /usr/bin/time -f "global-linear_alignment,$value,%E,%U,%S" --append -o benchmark/benchmark.tsv \
-        python main.py global-linear tmp/temp_0.fasta \
-        tmp/temp_1.fasta tests/case1/file.conf --print-alignment >/dev/null
-    /usr/bin/time -f "global-linear,$value,%E,%U,%S" --append -o benchmark/benchmark.tsv \
-        python main.py global-linear tmp/temp_0.fasta \
-        tmp/temp_1.fasta tests/case1/file.conf >/dev/null
-    /usr/bin/time -f "global-linear-linspace,$value,%E,%U,%S" --append -o benchmark/benchmark.tsv \
-        python main.py global-linear-linspace tmp/temp_0.fasta \
-        tmp/temp_1.fasta tests/case1/file.conf >/dev/null
+    for algo in global-linear global-affine global-linear-linspace
+    do 
+        /usr/bin/time -f "no_backtrack_$algo,$value,%E,%U,%S" --append -o $outfile \
+            python main.py $algo tmp/temp_0.fasta \
+            tmp/temp_1.fasta tests/$algo.conf >/dev/null
+    done
+    for algo in global-linear global-affine
+    do 
+        /usr/bin/time -f "with_backtrack_$algo,$value,%E,%U,%S" --append -o $outfile \
+            python main.py $algo tmp/temp_0.fasta \
+            tmp/temp_1.fasta tests/$algo.conf --print-alignment >/dev/null
+    done
     done
 done
 rm -r tmp
