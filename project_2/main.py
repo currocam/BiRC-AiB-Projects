@@ -1,4 +1,5 @@
 from collections import namedtuple
+from itertools import combinations
 from typing import Sized, Tuple, Optional
 import warnings
 import typer
@@ -221,6 +222,46 @@ def global_linear(
         aligned_1, aligned_2 = global_linear_backtrack(mat.mat, *args)
         seq1.seq, seq2.seq  = Seq(aligned_1), Seq(aligned_2)
         SeqIO.write(iter([seq1, seq2]), f, "fasta")
+
+@app.command()
+def pairwise_global_linear(
+    sequences: Path,
+    configuration: Path,
+    output: Optional[Path] = typer.Option("/dev/stdout", "--outfile", "-o")
+
+    ):
+    """
+    This program finds all pairwise cost for a global linear alignment. 
+    """
+    conf = read_configuration_file(configuration)
+    sequences = [x for x in SeqIO.parse(sequences,'fasta')]
+    matrix = np.empty((len(sequences), len(sequences)), dtype = "int")
+    for i in range(len(sequences)):
+        for j in range(len(sequences)):
+            x, y = dna2int(sequences[i].seq, conf.alphabet), dna2int(sequences[j].seq, conf.alphabet)
+            matrix[i, j] = global_linear_matrix(x, y, conf).get_value(len(x), len(y))
+    np.savetxt(str(output),matrix,fmt='%.0f')
+
+@app.command()
+def pairwise_global_affine(
+    sequences: Path,
+    configuration: Path,
+    output: Optional[Path] = typer.Option("/dev/stdout", "--outfile", "-o")
+    ):
+    """
+    This program finds all pairwise cost for a global affine alignment. 
+    """
+    conf = read_configuration_file(configuration)
+    sequences = [x for x in SeqIO.parse(sequences,'fasta')]
+    matrix = np.empty((len(sequences), len(sequences)), dtype = "int")
+    for i in range(len(sequences)):
+        for j in range(len(sequences)):
+            x, y = dna2int(sequences[i].seq, conf.alphabet), dna2int(sequences[j].seq, conf.alphabet)
+            mat, _, _ = global_affine_matrix(x, y, conf)
+            matrix[i, j] = mat.get_value(len(x), len(y))
+    np.savetxt(str(output),matrix,fmt='%.0f')
+
+
 
 @app.command()
 def global_affine(

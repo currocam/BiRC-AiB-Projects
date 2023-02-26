@@ -80,3 +80,80 @@ bash tests/run_test.sh
 ``` bash
 bash benchmark/benchmark.sh
 ```
+
+## Evaluation
+
+Question 1 
+---------- 
+
+Compute the score of an optimal alignment and an optimal alignment of
+seq1 and seq2 above using the programs global_linear using the above
+score matrix M and gap cost g(k)=5*k
+
+``` bash
+python main.py global-linear results/seq1.fasta results/seq2.fasta results/global-linear.conf --print-alignment
+
+; The optimal cost of this alignment is 226
+>seq1
+TATGGA-GAGAATAAAAGAACTGAGAGATCTAATG-TCGCAGTCCCGCAC-TCGCGAGAT
+ACT-CACTAAGAC-CACTGTGGACCATATGGCCATAATCAAAAAG
+>seq2
+-ATGGATGTCAATCCGACT-CTACTTTTCCTAAAAATTCCAGCGCAAAATGCCATAAG-C
+ACCACATTCCCTTATACTGGAGATCCTCCA-T-ACAGCCATGGAA
+```
+
+Question 2
+----------
+
+Compute the score of an optimal alignment and an optimal alignment of
+seq1 and seq2 above using the program global_affine using the above
+score matrix M and gap cost g(k)=5+5*k
+
+``` bash
+python main.py global-affine results/seq1.fasta results/seq2.fasta results/global-affine.conf --print-alignment
+
+; The optimal cost of this alignment is 266
+>seq1
+TATGGAGAGAATAAAAGAACTGAGAGATCTAATG-TCGCAGTCCCGCACTCGCGAGATAC
+T-CACTAAGAC-CACTGTGGACCATATGGCCATAATCAAAAAG
+>seq2
+-ATGGATGTCAATCCGACTCTACTTTTCCTAAAAATTCCAGCGCAAAATGCCATAAGCAC
+CCCATTCCCTTTTACTGGAGATCCTCCA--TACAGCCATGGAA
+```
+
+Question 3
+----------
+
+Compute the optimal score of an optimal alignment for each pair of the
+5 sequences above using global_linear with the score matrix M and gap
+cost g(k)=5*k. The result is a 5x5 table where entry (i,j) the optimal
+score of an alignment of seqi and seqj.
+
+
+``` bash
+python main.py pairwise-global-linear results/sequences.fasta results/global-linear.conf
+
+0 226 206 202 209
+226 0 239 223 220
+206 239 0 219 205
+202 223 219 0 210
+209 220 205 210 0
+```
+
+Question 4
+----------
+
+Compute the optimal score of an optimal alignment for each pair of the
+5 sequences above using global_affine with the score matrix M and gap
+cost g(k)=5+5*k. The result is a 5x5 table where entry (i,j) the
+optimal score of an alignment of seqi and seqj.
+
+``` bash
+python main.py pairwise-global-affine results/sequences.fasta results/global-affine.conf
+
+0 266 242 243 256
+266 0 283 259 254
+242 283 0 269 243
+243 259 269 0 247
+256 254 243 247 0
+```
