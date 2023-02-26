@@ -22,7 +22,7 @@ AffineGap = namedtuple("AffineGap", ["alpha", "beta"])
 @dataclass
 class ConfigurationAlignment:
     """Class for keeping alignment specification."""
-    gap: LinearGap|AffineGap
+    gap: "LinearGap|AffineGap"
     alphabet: dict[str: int]
     score_matrix: np.ndarray
 
@@ -78,10 +78,9 @@ def global_linear_matrix(
     dyn_mat = Matrix(np.empty(dim, dtype=int))
     # Define C function
     def C(i: int, j: int)-> int:
-        match i:
-            case 0 if j == 0: return 0
-            case _ if j == 0: return i * conf.gap.value
-            case 0 if j != 0: return j * conf.gap.value
+        if i == 0 and j == 0: return 0
+        if j == 0:  return i * conf.gap.value
+        if i == 0 and j != 0: return j * conf.gap.value
         return np.min([
             dyn_mat.get_value(i-1, j) + conf.gap.value,
             dyn_mat.get_value(i, j-1) + conf.gap.value,
@@ -97,53 +96,56 @@ def global_affine_matrix(
     """Fill global linear matrix for minimize problem"""
     dim = (len(x)+1, len(y)+1)
     alpha, beta = conf.gap.alpha, conf.gap.beta
-    S, I, D = Matrix(np.full(dim, np.nan)), Matrix(np.full(dim, np.nan)), Matrix(np.full(dim, np.nan))
+    T, I, D = Matrix(np.full(dim, np.nan)), Matrix(np.full(dim, np.nan)), Matrix(np.full(dim, np.nan))
     for i in range(len(x)+1):
         for j in range(len(y)+1):
             v1 = v2 = np.nan
-            if i > 0 and j >= 0:  v1 = S.get_value(i-1, j) + (alpha + beta)
+            if i > 0 and j >= 0:  v1 = T.get_value(i-1, j) + (alpha + beta)
             if i > 1 and j >= 0:  v2 = D.get_value(i-1, j) + alpha
             D.set_value(np.nanmin([v1, v2]), i, j)
             v1 = v2 = np.nan
-            if i >= 0 and j > 0:  v1 = S.get_value(i, j-1) + (alpha+beta)
+            if i >= 0 and j > 0:  v1 = T.get_value(i, j-1) + (alpha+beta)
             if i >= 0 and j > 1:  v2 = I.get_value(i, j-1) + alpha
             I.set_value(np.nanmin([v1, v2]), i, j)
             v1 = v2 = v3 = v4 = np.nan
             if i == 0 and j == 0: v1 = 0
-            if i > 0 and j > 0: v2 = S.get_value(i-1, j-1) + conf.score_matrix[x[i-1], y[j-1]]
+            if i > 0 and j > 0: v2 = T.get_value(i-1, j-1) + conf.score_matrix[x[i-1], y[j-1]]
             if i > 0 and j >= 0: v3 = D.get_value(i, j)
             if i >= 0 and j > 0: v4 = I.get_value(i, j)
-            S.set_value(np.nanmin([v1, v2, v3, v4]), i, j)
-    return S, I, D
+            T.set_value(np.nanmin([v1, v2, v3, v4]), i, j)
+    return T, I, D
 
 def global_affine_backtrack(
-    S: Matrix, I: Matrix, D: Matrix,
+    T: np.ndarray, I: np.ndarray, D: np.ndarray,
     A: list[int], B: list[int], conf: ConfigurationAlignment,
+    aligned_1 = None, aligned_2 = None
     )-> Tuple[list[int], list[int]]:
     """Compute alignment in linear time using the whole cost matrix"""
-    align1, align2 = "", ""
-    A, B = int2dna(A), int2dna(B)
+    aligned_1, aligned_2 = list(), list()
     i, j = len(A), len(B)
-    while i > 0 or j > 0:
-        if S.get_value(i, j) == D.get_value(i, j) + conf.gap.alpha + conf.gap.beta:
-            align1 = A[i-1] + align1
-            align2 = '-' + align2
-            i -= 1
-        elif S.get_value(i, j) == I.get_value(i, j):
-            align1 = A[i-1] + align1
-            align2 = '-' + align2
-            i -= 1
-        elif S.get_value(i, j) ==  D.get_value(i, j):
-            align1 = A[i-1] + align1
-            align2 = B[j-1] + align2
+    while i != 0 and j != 0:
+        if T[i, j] == (T[i-1, j-1] + conf.score_matrix[A[i-1], B[j-1]]):
+            aligned_1.append(A[i-1])
+            aligned_2.append(B[j-1])
             i -= 1
             j -= 1
-        else:
-            align1 = '-' + align1
-            align2 = B[j-1] + align2
+        if T[i, j] == D[i, j]:
+            while D[i, j] == D[i-1, j] + conf.gap.alpha:
+                aligned_1.append(A[i-1])
+                aligned_2.append(conf.alphabet["-"])
+                i -= 1
+            aligned_1.append(A[i-1])
+            aligned_2.append(conf.alphabet["-"])
+            i -= 1
+        if T[i, j] == I[i, j]:
+            while I[i, j] == I[i, j-1] + conf.gap.alpha:
+                aligned_1.append(conf.alphabet["-"])
+                aligned_2.append(B[i-1])
+                j -= 1
+            aligned_1.append(conf.alphabet["-"])
+            aligned_2.append(B[i-1])
             j -= 1
-    return align1, align2
-
+    return (int2dna(reversed(aligned_1)), int2dna(reversed(aligned_2)))
 
 def global_linear_backtrack(
     T: np.ndarray,
@@ -167,7 +169,7 @@ def global_linear_backtrack(
             aligned_1.append(conf.alphabet["-"])
             aligned_2.append(B[j-1])
             j -= 1
-    return (reversed(aligned_1), reversed(aligned_2))
+    return (int2dna(reversed(aligned_1)), int2dna(reversed(aligned_2)))
 
 # CLI app
 
@@ -217,7 +219,7 @@ def global_linear(
     print(f"; The optimal cost of this alignment is {mat.get_value(len(x), len(y))}", file = f)
     if print_alignment:
         aligned_1, aligned_2 = global_linear_backtrack(mat.mat, *args)
-        seq1.seq, seq2.seq  = Seq(int2dna(aligned_1)), Seq(int2dna(aligned_2))
+        seq1.seq, seq2.seq  = Seq(aligned_1), Seq(aligned_2)
         SeqIO.write(iter([seq1, seq2]), f, "fasta")
 
 @app.command()
@@ -234,10 +236,10 @@ def global_affine(
     seq1, seq2, conf, f = read_CLI_input(sequence_1, sequence_2, configuration, output)
     x, y = dna2int(seq1.seq, conf.alphabet), dna2int(seq2.seq, conf.alphabet)
     args = [x, y, conf]
-    S, I, D = global_affine_matrix(*args)
-    print(f"; The optimal cost of this alignment is {int(S.get_value(len(x), len(y)))}", file = f)
+    T, I, D = global_affine_matrix(*args)
+    print(f"; The optimal cost of this alignment is {int(T.get_value(len(x), len(y)))}", file = f)
     if print_alignment:
-        aligned_1, aligned_2 = global_affine_backtrack(S, I, D, *args)
+        aligned_1, aligned_2 = global_affine_backtrack(T.mat, I.mat, D.mat, *args)
         seq1.seq, seq2.seq  = Seq(aligned_1), Seq(aligned_2)
         SeqIO.write(iter([seq1, seq2]), f, "fasta")
 
