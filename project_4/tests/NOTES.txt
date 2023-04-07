@@ -1,0 +1,12 @@
+
+'tree1.new' is constructed by aligning seq1-seq10 in 'seqs.fasta'
+using clustalw and building a tree using QuickTree from this
+alignment. 'tree2.new' is constructed form tree1 by swapping leaves
+seq1 and seq1. The RF-distance between the two trees is 8.
+
+$ python rfdist.py tree1.new tree2.new 
+8 
+$ python rfdist.py tree1.new tree1.new 
+0 
+python rfdist.py tree2.new tree2.new 
+0 
