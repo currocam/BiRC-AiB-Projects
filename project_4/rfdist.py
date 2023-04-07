@@ -1,14 +1,16 @@
 import sys
 from Bio import Phylo
+Tree = Phylo.Newick.Tree
+Clade = Phylo.Newick.Clade
+from collections import deque
 
 
 def rfdist(T1, T2):
     # Step1: Root the two input trees at the same leaf
 
     # Find the node where to root the tree
-    root1 = T1.common_ancestor({"name": "seq1"})
-    root2 = T2.common_ancestor({"name": "seq1"})
-
+    root1 = find_any_leaf(T1)
+    root2 = find_leaf_by_name(T2, root1.name)
     # Set the root of the trees
     T1.root_with_outgroup(root1)
     T2.root_with_outgroup(root2)
