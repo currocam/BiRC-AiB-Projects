@@ -1,62 +1,55 @@
 import sys
 from Bio import Phylo
+from typing import List, Tuple
+
+# Define helper types
 Tree = Phylo.Newick.Tree
 Clade = Phylo.Newick.Clade
-from collections import deque
 
-
-def rfdist(T1, T2):
-    # Step1: Root the two input trees at the same leaf
-
+def root_at_same_leaf(T1: Tree, T2: Tree)-> Tuple[Tree, Tree]:
     # Find the node where to root the tree
-    root1 = find_any_leaf(T1)
-    root2 = find_leaf_by_name(T2, root1.name)
+    root1 = T1.get_terminals()[0] # Arbitrarily first leaf
+    root2 = next(T2.find_clades(root1.name))
     # Set the root of the trees
     T1.root_with_outgroup(root1)
     T2.root_with_outgroup(root2)
+    # Remove outgroup
+    T1.collapse(root1)
+    T2.collapse(root2)
+    return (
+        T1.common_ancestor(x for x in T1.get_terminals()),
+        T2.common_ancestor(x for x in T2.get_terminals())
+    )
 
+def is_potential_split(depths: List[int])-> bool:
+    return max(depths) - min(depths) + 1 == len(depths)
+
+def rfdist(T1: Tree, T2: Tree)-> int:
+    # Step1: Root the two input trees at the same leaf
+    T1, T2 = root_at_same_leaf(T1, T2)
     # Step 2: Make a Depth-First numbering of the leaves in T1
-
-    # Make a depth-first numbering of the leaves
-    num = 1
-    for leaf in T1.get_terminals():
-        if leaf.name != root1.name:
-            leaf.depthnum = num
-            num += 1
-
-    # Print the leaf nodes in depth-first order for Tree1
-    leaves = [leaf for leaf in T1.get_terminals() if leaf.name != root1.name]
-    for leaf in sorted(leaves, key=lambda x: x.depthnum):
-        print(leaf.name, leaf.depthnum)
-
-    # Step 3: Rename the leaves in T2 with the DF-numbering of leaves in T1
-    for node in T2.get_terminals():
-        if node.name != root2.name:
-            node_depthnum = None
-            for leaf in T1.get_terminals():
-                if leaf.name == node.name:
-                    node_depthnum = leaf.depthnum
-                    break
-            if node_depthnum is not None:
-                node.depthnum = node_depthnum
-            else:
-                raise ValueError(f"Leaf '{node.name}' not found in Tree1")
-
-    # Step 4:
+    # No need to reannotate, we can just use a dictionary
+    # and keep track of the names if we assume all headers are unique
+    depth_dict = {leaf.name : num +1 for num, leaf in enumerate(T1.get_terminals()) if leaf.name}
+    # Step 3:
     # Annotate internal nodes in T1 with DF-intervals
-    for clade in T1.find_clades():
-        if not clade.is_terminal():
-            leaves = [leaf.depthnum for leaf in clade.get_terminals() if leaf.name != root1.name]
-            clade.df_interval = (min(leaves), max(leaves))
-
-    for clade in T1.find_clades():
-        if not clade.is_terminal():
-            print(clade.df_interval)
-
-
+    intervals = set()
+    for clade in T1.get_nonterminals():
+        depths = [depth_dict[leaf.name] for leaf in clade.get_terminals() if leaf.name]
+        intervals.add((min(depths), max(depths)))
+    # Step 4
+    # Count the number of shared splits'
+    shared = 0
+    for clade in T2.get_nonterminals():
+        depths = [depth_dict[leaf.name] for leaf in clade.get_terminals() if leaf.name]
+        if is_potential_split(depths) and (min(depths), max(depths)) in intervals:
+            shared+=1
+    #“number of splits in T1 and T2” - 2 * shared
+    return len(intervals)*2 - 2*shared
+    
 if __name__ == '__main__':
     if len(sys.argv) != 3:
         sys.exit("Usage: python rfdist.py tree1.new tree2.new")
     tree1 = Phylo.read(sys.argv[1], 'newick')
     tree2 = Phylo.read(sys.argv[2], 'newick')
-    rfdist(tree1, tree2)
+    print(rfdist(tree1, tree2))
