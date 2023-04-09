@@ -25,6 +25,11 @@ def is_potential_split(depths: List[int])-> bool:
     return max(depths) - min(depths) + 1 == len(depths)
 
 def rfdist(T1: Tree, T2: Tree)-> int:
+    size_T1, size_T2 = len(T1.get_terminals()), len(T1.get_terminals())
+    if size_T1 != size_T2:
+        raise ValueError('Tree 1 and Tree 2 have different length')
+    if size_T1 < 3:
+        return 0
     # Step1: Root the two input trees at the same leaf
     T1, T2 = root_at_same_leaf(T1, T2)
     # Step 2: Make a Depth-First numbering of the leaves in T1
