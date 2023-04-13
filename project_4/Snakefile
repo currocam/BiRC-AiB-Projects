@@ -1,0 +1,40 @@
+from itertools import combinations
+samples = [
+    "clustal_aib", "muscle_aib", "kalig_aib",
+    "clustal_aib_permuted", "muscle_aib_permuted", "kalig_aib_permuted",
+    ]
+rule all:
+    input:
+        expand("trees/{sample}_{method}.newick", sample = samples, method = ['quicktree', 'rapidnj'])
+
+rule quicktree:
+    input: 
+        "alignments/{sample}.stockholm"
+    output:  
+        "trees/{sample}_quicktree.newick"
+    shell:
+        "quicktree {input} > {output}"
+
+
+rule rapidnj:
+    input: 
+        "alignments/{sample}.fasta"
+    output:  
+        "trees/{sample}_rapidnj.newick"
+    shell:
+        'rapidnj -i fa {input} > {output}'
+
+rule truncate_fasta:
+    input:
+        'input/{sample}.fasta'
+    output:
+        'input/{sample}_truncated.fasta'
+    shell:
+        "cut -d '|' -f-2 {input} > {output}"
+
+rule prepare_input:
+    input: 
+        expand(
+            'input/{sample}_truncated.fasta',
+            sample = ['patbase_aibtas_permuted', 'patbase_aibtas'] 
+            )
