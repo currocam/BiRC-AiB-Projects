@@ -9,7 +9,7 @@ rule all:
 
 rule quicktree:
     input: 
-        "alignments/{sample}.stockholm"
+        "alignments/{sample}_truncated.stockholm"
     output:  
         "trees/{sample}_quicktree.newick"
     shell:
@@ -18,7 +18,7 @@ rule quicktree:
 
 rule rapidnj:
     input: 
-        "alignments/{sample}.fasta"
+        "alignments/{sample}_truncated.fasta"
     output:  
         "trees/{sample}_rapidnj.newick"
     shell:
@@ -26,11 +26,19 @@ rule rapidnj:
 
 rule truncate_fasta:
     input:
-        'input/{sample}.fasta'
+        'alignments/{sample}.fasta'
     output:
-        'input/{sample}_truncated.fasta'
+        'alignments/{sample}_truncated.fasta'
     shell:
         "cut -d '|' -f-2 {input} > {output}"
+
+rule fasta2stockholm:
+    input:
+        'alignments/{sample}_truncated.fasta'
+    output:
+        "alignments/{sample}_truncated.stockholm"
+    shell:
+        "python fasta2stock.py {input} > {output}"
 
 rule prepare_input:
     input: 
