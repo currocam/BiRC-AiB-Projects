@@ -23,12 +23,17 @@ def create_start_tree(leafs: list[str]):
 
 
 def find_neighbours(D: np.ndarray) -> tuple[int, int]:
-    N = D.copy()
+    val = np.inf
+    sum_rows = [sum(D[:, i]) for i in range(D.shape[0])]
+    sum_cols = [sum(D[:, j]) for j in range(D.shape[0])]
     for i, j in np.ndindex(D.shape):
-        N[i, j] += (sum(D[:, i]) + sum(D[:, j])) / (len(D) - 2)
-    np.fill_diagonal(N, np.inf)
-    i, j = np.unravel_index(np.argmin(N), N.shape)
-    return i, j
+        if i == j:
+            continue
+        N_ij = D[i, j] + (sum_rows[i] + sum_cols[j]) / (len(D) - 2)
+        if val > N_ij:
+            i_min, j_min = i, j
+            val = N_ij
+    return i_min, j_min
 
 
 def join_neighbours(D: np.ndarray, clades: list[Clade], i: int, j: int):
@@ -43,14 +48,15 @@ def join_neighbours(D: np.ndarray, clades: list[Clade], i: int, j: int):
 
 def update_dissimilarity_matrix(D: np.ndarray, i: int, j: int):
     d_ij = D[i, j]
-    row_i = np.delete(D[i,], (i, j))
-    col_j = np.delete(D[:, j], (i, j))
+    row_i = D[i,]
+    col_j = D[:, j]
 
-    D = np.delete(D, (i, j), axis=0)
-    D = np.delete(D, (i, j), axis=1)
+    rows = [row for row in range(D.shape[0]) if row not in [i, j]]
+    rows.append(i)
+    cols = [col for col in range(D.shape[1]) if col not in [i, j]]
+    cols.append(i)
 
-    D = np.vstack((D, np.zeros(len(D))))
-    D = np.hstack((D, np.zeros(len(D)).reshape(-1, 1)))
+    D = D[rows][:, cols]
 
     k = -1
     for m in range(len(D) - 1):
@@ -80,12 +86,15 @@ if __name__ == "__main__":
     tree = create_start_tree(leafs)
     clades = tree.clade.clades
     while len(D) > 3:
+        if len(D) % 10 == 0:
+            print(f"Iteration {len(D)}", file=sys.stderr)
         i, j = find_neighbours(D)
         knode = join_neighbours(D, clades, i, j)
         clades.append(knode)
         D = update_dissimilarity_matrix(D, i, j)
     final_node = terminate_nj(D, clades)
     clades.append(final_node)
+    #
     tree = tree.common_ancestor(*tree.get_terminals())
-    Phylo.draw_ascii(tree)
+    # Phylo.draw_ascii(tree)
     Phylo.write(tree, format="newick", file=sys.stdout)

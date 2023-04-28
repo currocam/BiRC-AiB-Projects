@@ -1,0 +1,37 @@
+SAMPLES = [
+    "1347_FAINT","1689_FGGY_N", "214_Arena_glycoprot","494_Astro_capsid","877_Glu_synthase",
+    "1493_Fe-ADH","1756_FAD_binding_3", "304_A1_Propeptide", "608_Gemini_AL2", "89_Adeno_E3_CR1",
+    "1560_Ferritin", "1849_FG-GAP", "401_DDE", "777_Gemini_V1"
+]
+
+rule all:
+    input: 
+        expand(
+            "output/{sample}_{program}.newick", sample = SAMPLES, program = ["rapidnj", "python"]
+            )
+
+rule rapidnj:
+    input:
+        "tests/unique_distance_matrices/{sample}.phy"
+    output:
+        "output/{sample}_rapidnj.newick"
+    threads: 1 
+    log:
+        "output/{sample}_rapidnj.log"
+    benchmark:
+        "output/{sample}_rapidnj.benchmark"
+    shell:
+        "rapidnj -i pd {input} > {output} 2> {log}"
+
+rule our_implemantation:
+    input:
+        "tests/unique_distance_matrices/{sample}.phy"
+    output:
+        "output/{sample}_python.newick"
+    threads: 1 
+    log:
+        "output/{sample}_python.log"
+    benchmark:
+        "output/{sample}_python.benchmark"
+    shell:
+        "python nj.py {input} > {output} 2> {log}"
