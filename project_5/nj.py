@@ -4,6 +4,10 @@ import numpy as np
 from Bio import Phylo
 from Bio.Phylo.BaseTree import Clade
 
+import resource, sys
+
+resource.setrlimit(resource.RLIMIT_STACK, (2**29, -1))
+sys.setrecursionlimit(10**6)
 Tree = Phylo.Newick.Tree
 Clade = Phylo.Newick.Clade
 
@@ -48,8 +52,8 @@ def join_neighbours(D: np.ndarray, clades: list[Clade], i: int, j: int):
 
 def update_dissimilarity_matrix(D: np.ndarray, i: int, j: int):
     d_ij = D[i, j]
-    row_i = D[i,]
-    col_j = D[:, j]
+    row_i = np.delete(D[i,], (i, j))
+    col_j = np.delete(D[:, j], (i, j))
 
     rows = [row for row in range(D.shape[0]) if row not in [i, j]]
     rows.append(i)
@@ -95,6 +99,6 @@ if __name__ == "__main__":
     final_node = terminate_nj(D, clades)
     clades.append(final_node)
     #
-    tree = tree.common_ancestor(*tree.get_terminals())
+    # tree = tree.common_ancestor(*tree.get_terminals())
     # Phylo.draw_ascii(tree)
     Phylo.write(tree, format="newick", file=sys.stdout)
