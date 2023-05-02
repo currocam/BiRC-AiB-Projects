@@ -47,47 +47,60 @@ def get_match_odds(evens: list[int], odds: list[int]) -> dict[int, int]:
     """
     return match_pairs(odds, evens)
 
-
-def make_turn(path: list[int]) -> None:
-    n = len(path)
-    if n == 1:
-        return path
-    path[(n // 2) : (n // 2 + 2)] = [LEFT, LEFT]
-    return path
+    # Find P, at least half the odd-H’s are in one substring
+    # on one side of p (the odd substring) and at least half the even-H’s are
+    # on the other side of p (the even substring).
 
 
-def make_turn(path: list[int]) -> list[int]:
-    n = len(path)
-    if n == 1:
-        return RIGHT
-    path[(n // 2) : (n // 2 + 2)] = [RIGHT, RIGHT]
-    return path
+def split_binary_search(size, matchs):
+    high, low = size, 0
+    while True:
+        split = (high - low) // 2
+        at_least_half_odd = sum([x < split for x, _ in matchs]) / len(matchs) > 0.5
+        at_least_half_even = sum([x > split for _, x in matchs]) / len(matchs) > 0.5
+        if at_least_half_odd and at_least_half_even:
+            return split
+        if at_least_half_odd:
+            low = split
+        if at_least_half_even:
+            high = split
 
 
-hp = "ppphhpphhhhpphhhphhphhphhhhpppppppphhhhhhpphhhhhhppppppppphphhphhhhhhhhhhhpphhhphhphpphphhhpppppphhh".upper()
-evens, odds = find_even_odd(hp)
-match_evens, match_odds = get_match_even(evens, odds), get_match_odds(evens, odds)
+if __name__ == "__main__":
+    hp = "pphhhphhhhhhhhppphhhhhhhhhhphppphhhhhhhhhhhhpppphhhhhhphhphp".upper()
+    evens, odds = find_even_odd(hp)
+    match_evens, match_odds = get_match_even(evens, odds), get_match_odds(evens, odds)
 
-if len(match_evens) > len(match_odds):
-    matchs = list(OrderedDict(sorted(match_evens.items())).items())
-else:
-    matchs = list(OrderedDict(sorted(match_odds.items())).items())
+    if len(match_evens) > len(match_odds):
+        matchs = list(OrderedDict(sorted(match_evens.items())).items())
+    else:
+        matchs = list(OrderedDict(sorted(match_odds.items())).items())
 
-path = (len(hp) - 1) * [FORWARD]
+    split = split_binary_search(len(hp), matchs)
+    # Create straight line
+    path = (len(hp) - 1) * [FORWARD]
 
-k, v = matchs.pop()
-path[k:v] = make_turn(path[k:v])
-split = (v - k) // 2 + k
-upper_count, lower_count = 0, 0
-while matchs:
-    k, v = matchs.pop()
-    diff = (split - k - upper_count) - (v - split - 1 + lower_count)
-    if diff < 0:
-        lower_count -= diff
-        path[v + diff - 2 : v + (diff + 2)] = [LEFT, RIGHT, RIGHT, LEFT]
-    if diff > 0:
-        upper_count += diff
-        path[k + diff - 2 : k + diff + 2] = [LEFT, RIGHT, RIGHT, LEFT]
+    # Split into S1 and S2
+    path[split : split + 2] = [RIGHT, RIGHT]
 
+    evens = [e for e in evens if e < split]
+    for index in range(len(evens) - 2 + 1):
+        first, last = evens[index], evens[index + 1]
+        size = last - first
+        if size >= 4:
+            path[first] = LEFT
+            middle = first + size // 2
+            path[middle - 1 : middle + 1] = [RIGHT, RIGHT]
+            path[last - 1] = LEFT
 
-"".join(path)
+    odds = [o for o in odds if o > split]
+    for index in range(len(odds) - 2 + 1):
+        first, last = odds[index], odds[index + 1]
+        size = last - first
+        if size >= 4:
+            path[first] = LEFT
+            middle = first + size // 2
+            path[middle - 1 : middle + 1] = [RIGHT, RIGHT]
+            path[last - 1] = LEFT
+
+    print("".join(path))
