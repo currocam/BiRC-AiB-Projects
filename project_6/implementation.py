@@ -1,3 +1,4 @@
+import sys
 import random
 from hpview import HPFold, make_absfold
 
@@ -70,46 +71,37 @@ def generate_random_path(n: int) -> str:
     return grid_to_path(list(grid))
 
 
-def mutate_end_region(path: str, n: int) -> str:
-    grid = path_to_grid(path)
-    grid = random_walk(grid[0:n], n)
-    return grid_to_path(grid)
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        sys.exit("Usage: python quart_approx.py ppph")
 
+    hp = sys.argv[1]
+    seq = HPFold(hp)
 
-def mutate_start_region(path: str, n: int) -> str:
-    return mutate_end_region(path[::-1], n)[::-1]
+    best_score = 0
+    best_path = "".join((len(hp) - 1) * ["S"])
 
-
-hp = "pphhhphhhhhhhhppphhhhhhhhhhphppphhhhhhhhhhhhpppphhhhhhphhphp"
-seq = HPFold(hp)
-
-best_score = 0
-best_path = "".join((len(hp) - 1) * ["S"])
-
-for _ in range(50000):
-    try:
-        path = generate_random_path(len(hp))
-        seq.SetAbsFold(make_absfold(path))
-        score = seq.GetScore()
-        if score > best_score:
-            best_score, best_path = score, path
-            print(score)
-            for i in range(len(hp) // 5):
-                for _ in range(i * 3):
-                    path2 = mutate_end_region(path, i)
-                    seq.SetAbsFold(make_absfold(path2))
+    n_tries = len(hp) ** 2
+    for _ in range(n_tries):
+        try:
+            path = generate_random_path(len(hp))
+            seq.SetAbsFold(make_absfold(path))
+            score = seq.GetScore()
+            if score > best_score:
+                best_score, best_path = score, path
+                for _ in range(len(hp)):
+                    path = best_path
+                    index = random.randint(0, len(path) - 1)
+                    direction = random.choice(["N", "S", "W", "E"])
+                    path[index] = direction
+                    seq.SetAbsFold(make_absfold(path))
                     score = seq.GetScore()
                     if score > best_score:
-                        best_score, best_path = score, path2
-                    path2 = mutate_start_region(path, i)
-                    seq.SetAbsFold(make_absfold(path2))
-                    score = seq.GetScore()
-                    if score > best_score:
-                        best_score, best_path = score, path2
-    except:
-        pass
-    # print(f"Optimal value: {best_score}", end="\r")
-
-seq = HPFold(hp)
-seq.SetAbsFold(make_absfold(best_path))
-seq.PrintFold()
+                        best_score, best_path = score, path
+        except:
+            pass
+        # print(f"Optimal value: {best_score}", end="\r")
+    print(best_path)
+    seq = HPFold(hp)
+    seq.SetAbsFold(make_absfold(best_path))
+    seq.PrintFold()

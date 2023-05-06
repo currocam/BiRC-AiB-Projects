@@ -1,4 +1,7 @@
 from collections import OrderedDict
+import sys
+from hpview import HPFold, make_relfold
+
 
 FORWARD, LEFT, RIGHT = "f", "l", "r"
 
@@ -67,7 +70,9 @@ def split_binary_search(size, matchs):
 
 
 if __name__ == "__main__":
-    hp = "pphhhphhhhhhhhppphhhhhhhhhhphppphhhhhhhhhhhhpppphhhhhhphhphp".upper()
+    if len(sys.argv) != 2:
+        sys.exit("Usage: python quart_approx.py ppph")
+    hp = sys.argv[1].upper()
     evens, odds = find_even_odd(hp)
     match_evens, match_odds = get_match_even(evens, odds), get_match_odds(evens, odds)
 
@@ -84,7 +89,7 @@ if __name__ == "__main__":
     path[split : split + 2] = [RIGHT, RIGHT]
 
     evens = [e for e in evens if e < split]
-    for index in range(len(evens) - 2 + 1):
+    for index in range(1, len(evens) - 2, 2):
         first, last = evens[index], evens[index + 1]
         size = last - first
         if size >= 4:
@@ -94,7 +99,7 @@ if __name__ == "__main__":
             path[last - 1] = LEFT
 
     odds = [o for o in odds if o > split]
-    for index in range(len(odds) - 2 + 1):
+    for index in range(1, len(odds) - 2, 2):
         first, last = odds[index], odds[index + 1]
         size = last - first
         if size >= 4:
@@ -103,4 +108,8 @@ if __name__ == "__main__":
             path[middle - 1 : middle + 1] = [RIGHT, RIGHT]
             path[last - 1] = LEFT
 
-    print("".join(path))
+    seq = HPFold(hp.lower())
+    path = "".join(path)
+    print(path)
+    seq.SetRelFold(make_relfold(path))
+    seq.PrintFold()
