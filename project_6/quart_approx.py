@@ -58,7 +58,7 @@ def get_match_odds(evens: list[int], odds: list[int]) -> dict[int, int]:
 def split_binary_search(size, matchs):
     high, low = size, 0
     while True:
-        split = (high - low) // 2
+        split = (high - low + 1) // 2
         at_least_half_odd = sum([x < split for x, _ in matchs]) / len(matchs) > 0.5
         at_least_half_even = sum([x > split for _, x in matchs]) / len(matchs) > 0.5
         if at_least_half_odd and at_least_half_even:
@@ -84,29 +84,39 @@ if __name__ == "__main__":
     split = split_binary_search(len(hp), matchs)
     # Create straight line
     path = (len(hp) - 1) * [FORWARD]
-
     # Split into S1 and S2
     path[split : split + 2] = [RIGHT, RIGHT]
+    if len(match_evens) > len(match_odds):
+        evens = [e for e in evens if e < split]
+        odds = [o for o in odds if o > split]
 
-    evens = [e for e in evens if e < split]
-    for index in range(1, len(evens) - 2, 2):
+    else:
+        evens = [e for e in evens if e > split]
+        odds = [o for o in odds if o < split]
+
+    for index in range(0, len(evens) - 1):
         first, last = evens[index], evens[index + 1]
         size = last - first
+
         if size >= 4:
             path[first] = LEFT
             middle = first + size // 2
             path[middle - 1 : middle + 1] = [RIGHT, RIGHT]
             path[last - 1] = LEFT
+            if first == split + 1:
+                path[first] = FORWARD
 
-    odds = [o for o in odds if o > split]
-    for index in range(1, len(odds) - 2, 2):
+    for index in range(0, len(odds) - 1):
         first, last = odds[index], odds[index + 1]
         size = last - first
+
         if size >= 4:
             path[first] = LEFT
             middle = first + size // 2
             path[middle - 1 : middle + 1] = [RIGHT, RIGHT]
             path[last - 1] = LEFT
+            if first == split + 1:
+                path[first] = FORWARD
 
     seq = HPFold(hp.lower())
     path = "".join(path)
